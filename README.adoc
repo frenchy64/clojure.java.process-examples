@@ -1,32 +1,33 @@
-# clojure.java.process-examples
+= clojure.java.process-examples
 
 This repository provides a comprehensive suite of usage examples and tests for the `clojure.java.process` library, a built-in Clojure library (since Clojure 1.12) for spawning and interacting with external processes.
 
-## What is `clojure.java.process`?
+== What is `clojure.java.process`?
 
 `clojure.java.process` is a Clojure library for spawning and interacting with external processes, capturing output and error streams, passing environment variables, and handling input/output in a functional style. It provides a Clojure-friendly wrapper around Java's `ProcessBuilder` and `Process` APIs.
 
-## API Overview
+== API Overview
 
 The library provides the following main functions:
 
-- **`exec`** - Execute a command and return captured output (throws on non-zero exit)
-- **`start`** - Start a process and return a `Process` object
-- **`stdin`** - Get the stdin stream of a process (OutputStream)
-- **`stdout`** - Get the stdout stream of a process (InputStream)
-- **`stderr`** - Get the stderr stream of a process (InputStream)
-- **`exit-ref`** - Get a reference that yields the exit code when dereferenced
-- **`to-file`** - Create a redirect to write to a file
-- **`from-file`** - Create a redirect to read from a file
-- **`io-task`** - Helper for async I/O operations
+* *`exec`* - Execute a command and return captured output (throws on non-zero exit)
+* *`start`* - Start a process and return a `Process` object
+* *`stdin`* - Get the stdin stream of a process (OutputStream)
+* *`stdout`* - Get the stdout stream of a process (InputStream)
+* *`stderr`* - Get the stderr stream of a process (InputStream)
+* *`exit-ref`* - Get a reference that yields the exit code when dereferenced
+* *`to-file`* - Create a redirect to write to a file
+* *`from-file`* - Create a redirect to read from a file
+* *`io-task`* - Helper for async I/O operations
 
-## Example Usage
+== Example Usage
 
-Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/clojure/java/process_test.clj) for more):
+Here are comprehensive examples (see link:test/clojure/java/process_test.clj[test/clojure/java/process_test.clj] for more):
 
-### Basic Command Execution
+=== Basic Command Execution
 
-```clojure
+[source,clojure]
+----
 (require '[clojure.java.process :as process])
 
 ;; Run a simple command with exec
@@ -40,11 +41,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 ;; Execute commands that produce no output
 (process/exec "true")
 ;; => ""
-```
+----
 
-### Working with Input
+=== Working with Input
 
-```clojure
+[source,clojure]
+----
 ;; Execute cat with input by writing to stdin
 (let [proc (process/start "cat")
       stdin (process/stdin proc)
@@ -77,11 +79,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
     (.waitFor proc)
     output))
 ;; => "HELLO\n"
-```
+----
 
-### Starting Processes Asynchronously
+=== Starting Processes Asynchronously
 
-```clojure
+[source,clojure]
+----
 ;; Start a process and get a Process object
 (def proc (process/start "sleep" "1"))
 (.waitFor proc)
@@ -95,11 +98,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 ;; Get process ID
 (.pid proc)
 ;; => 12345 (some number)
-```
+----
 
-### Stream Handling
+=== Stream Handling
 
-```clojure
+[source,clojure]
+----
 ;; Write to stdin and read from stdout
 (let [proc (process/start "cat")
       stdin (process/stdin proc)
@@ -126,11 +130,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
   (.waitFor proc)
   [stdout stderr])
 ;; => ["out\n" "err\n"]
-```
+----
 
-### Using exit-ref
+=== Using exit-ref
 
-```clojure
+[source,clojure]
+----
 ;; Use exit-ref to get exit value
 (let [proc (process/start "true")
       exit-val (process/exit-ref proc)]
@@ -145,11 +150,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
       elapsed (- (System/currentTimeMillis) start-time)]
   elapsed)
 ;; => 100 ; approximately 100 milliseconds
-```
+----
 
-### Environment Variables
+=== Environment Variables
 
-```clojure
+[source,clojure]
+----
 ;; Pass custom environment variables
 (process/exec {:env {"MYVAR" "myvalue"}} "sh" "-c" "echo $MYVAR")
 ;; => "myvalue\n"
@@ -163,11 +169,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 (process/exec {:clear-env true :env {"MYVAR" "test"}} 
               "sh" "-c" "echo $MYVAR")
 ;; => "test\n"
-```
+----
 
-### Working Directory
+=== Working Directory
 
-```clojure
+[source,clojure]
+----
 ;; Execute in a different directory
 (let [temp-dir (System/getProperty "java.io.tmpdir")]
   (process/exec {:dir temp-dir} "pwd"))
@@ -180,11 +187,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
   (.waitFor proc)
   output)
 ;; => "/home/username\n" (or similar)
-```
+----
 
-### File I/O and Redirects
+=== File I/O and Redirects
 
-```clojure
+[source,clojure]
+----
 (require '[clojure.java.io :as io])
 
 ;; Redirect output to file
@@ -214,11 +222,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
   (.waitFor proc)
   (slurp "/tmp/log.txt"))
 ;; => "initial\nappended\n"
-```
+----
 
-### Redirect Options
+=== Redirect Options
 
-```clojure
+[source,clojure]
+----
 ;; Inherit stdout (no capture, prints to parent's stdout)
 (let [proc (process/start {:out :inherit} "echo" "inherited")]
   (.waitFor proc))
@@ -233,11 +242,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
   (.waitFor proc)
   output)
 ;; => "out\nerr\n" (both in stdout)
-```
+----
 
-### Process Pipelines
+=== Process Pipelines
 
-```clojure
+[source,clojure]
+----
 ;; Pipeline: echo | wc
 (let [proc1 (process/start "echo" "hello world")
       proc2 (process/start "wc" "-w")
@@ -291,11 +301,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
     (.waitFor proc3)
     output))
 ;; => "4\n5\n"
-```
+----
 
-### Concurrent Processes
+=== Concurrent Processes
 
-```clojure
+[source,clojure]
+----
 ;; Run multiple processes concurrently
 (let [procs [(process/start "sleep" "0.1")
              (process/start "sleep" "0.1")
@@ -324,11 +335,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
     (.waitFor consumer)
     output))
 ;; => "5"
-```
+----
 
-### Bidirectional Communication
+=== Bidirectional Communication
 
-```clojure
+[source,clojure]
+----
 ;; Interactive communication with a process
 (let [proc (process/start "cat")
       stdin (process/stdin proc)
@@ -345,11 +357,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
       (.waitFor proc)
       [line1 line2])))
 ;; => ["first" "second"]
-```
+----
 
-### Process Control
+=== Process Control
 
-```clojure
+[source,clojure]
+----
 ;; Destroy a running process
 (let [proc (process/start "sleep" "10")]
   (.destroy proc)
@@ -374,11 +387,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
   (.destroy proc)
   completed)
 ;; => false
-```
+----
 
-### Error Handling
+=== Error Handling
 
-```clojure
+[source,clojure]
+----
 ;; exec throws on non-zero exit
 (try
   (process/exec "sh" "-c" "exit 42")
@@ -397,11 +411,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
   (catch Exception e
     "Command not found"))
 ;; => "Command not found"
-```
+----
 
-### Text Processing Examples
+=== Text Processing Examples
 
-```clojure
+[source,clojure]
+----
 ;; Sort lines
 (let [proc (process/start "sort")
       stdin (process/stdin proc)
@@ -478,11 +493,12 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
     (.waitFor proc)
     output))
 ;; => "apple\nbanana\napple\n"
-```
+----
 
-### Advanced Examples
+=== Advanced Examples
 
-```clojure
+[source,clojure]
+----
 ;; Base64 encoding
 (let [proc (process/start "base64")
       stdin (process/stdin proc)
@@ -527,44 +543,96 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 ;; Chain commands
 (process/exec "sh" "-c" "echo 1; echo 2; echo 3")
 ;; => "1\n2\n3\n"
-```
+----
 
-## Comparison with babashka.process
+[[comparison]]
+== Comparison with babashka.process
 
-Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` provide ways to shell out to external processes. Here's a comprehensive comparison to help you migrate between them or choose the right one for your use case.
+Both `clojure.java.process` (built into Clojure 1.12+ and Babashka) and `babashka.process` (separate library, also built into Babashka) provide ways to shell out to external processes. Here's a comprehensive comparison to help you migrate between them or choose the right one for your use case.
 
-### Summary Table
+NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so the dependency management advantage applies mainly when choosing between them in Clojure (not Babashka) environments.
 
-| Feature | clojure.java.process | babashka.process |
-|---------|---------------------|------------------|
-| **Availability** | Built into Clojure 1.12+ | Separate library, built into Babashka |
-| **Basic execution** | `exec` (throws on error) | `shell` (throws on error), `sh` (doesn't throw) |
-| **Async execution** | `start` returns Process | `process` returns process map |
-| **Output capture** | Manual with streams or via exec | `:out :string`, `:out :bytes` |
-| **Input passing** | Manual stream writing | `:in "string"`, `:in (io/file ...)` |
-| **Error handling** | Throws RuntimeException | `check` function, `:continue` option |
-| **Piping** | Manual with `io/copy` | Built-in with `->`, pipeline support |
-| **Working directory** | `:dir` option | `:dir` option |
-| **Environment vars** | `:env` map, `:clear-env` | `:env`, `:extra-env` |
-| **Stream access** | `stdin`, `stdout`, `stderr` functions | Direct map access `:in`, `:out`, `:err` |
-| **Tokenization** | Manual | Automatic for first string arg |
-| **Process control** | Java Process methods | `destroy`, `destroy-tree`, `alive?` |
+=== Summary Table
 
-### Feature-by-Feature Comparison with Examples
+[cols="3,4,4",options="header"]
+|===
+| Feature | clojure.java.process | babashka.process
 
-#### 1. Basic Command Execution
+| <<comparison-availability,Availability>>
+| Built into Clojure 1.12+ and Babashka
+| Separate library, built into Babashka
 
-**clojure.java.process:**
-```clojure
+| <<comparison-basic-exec,Basic execution>>
+| `(cjp/exec "echo" "hello")` +
+  `"hello\n"`
+| `(-> (bp/shell {:out :string} "echo hello") :out)` +
+  `"hello\n"`
+
+| <<comparison-async-exec,Start async process>>
+| `(cjp/start "sleep" "1")` +
+  Returns `Process` object
+| `(bp/process "sleep" "1")` +
+  Returns process map
+
+| <<comparison-output-capture,Capture output as string>>
+| `(cjp/exec "echo" "test")` +
+  `"test\n"`
+| `(-> (bp/process {:out :string} "echo" "test") deref :out)` +
+  `"test\n"`
+
+| <<comparison-input,Pass string as input>>
+| Manual: get stdin, write bytes, close
+| `(bp/process {:in "data"} "cat")`
+
+| <<comparison-exit-codes,Handle non-zero exit>>
+| `exec` throws, `start` returns exit code
+| `shell` throws, `process` with `:continue true` doesn't
+
+| <<comparison-piping,Pipe between processes>>
+| Manual with `io/copy`
+| `(-> (bp/process "echo" "hi") (bp/process "tr" "a-z" "A-Z"))`
+
+| <<comparison-working-dir,Set working directory>>
+| `(cjp/exec {:dir "/tmp"} "pwd")`
+| `(bp/process {:dir "/tmp"} "pwd")`
+
+| <<comparison-env,Add environment variable>>
+| `(cjp/exec {:env {"FOO" "bar"}} "sh" "-c" "echo $FOO")`
+| `(bp/process {:extra-env {"FOO" "bar"}} "sh" "-c" "echo $FOO")`
+
+| <<comparison-streams,Access process streams>>
+| `(cjp/stdin proc)`, `(cjp/stdout proc)`, `(cjp/stderr proc)`
+| `(:in proc)`, `(:out proc)`, `(:err proc)` in map
+
+| <<comparison-tokenization,Tokenize command string>>
+| Manual - provide separate args
+| Automatic: `(bp/shell "ls -la")` splits to `["ls" "-la"]`
+
+| <<comparison-process-control,Check if process alive>>
+| `(.isAlive proc)`
+| `(bp/alive? proc)`
+
+|===
+
+[[comparison-features]]
+=== Feature-by-Feature Comparison with Examples
+
+[[comparison-basic-exec]]
+==== 1. Basic Command Execution
+
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Throws on non-zero exit
 (cjp/exec "echo" "Hello")
 ;; => "Hello\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Throws on non-zero exit, captures output
@@ -574,12 +642,14 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
 ;; Doesn't throw by default, like clojure.java.shell/sh
 (-> (bp/sh "echo Hello") :out)
 ;; => "Hello\n"
-```
+----
 
-#### 2. Async Process Execution
+[[comparison-async-exec]]
+==== 2. Async Process Execution
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Start process and wait later
@@ -587,10 +657,11 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
   (.waitFor proc)
   (.exitValue proc))
 ;; => 0
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Process returns a map with Process object
@@ -598,12 +669,14 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
   @proc ; deref waits for completion
   (:exit proc))
 ;; => 0
-```
+----
 
-#### 3. Capturing Output
+[[comparison-output-capture]]
+==== 3. Capturing Output
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Using exec (easiest)
@@ -616,10 +689,11 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
   (.waitFor proc)
   output)
 ;; => "output\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Capture as string
@@ -629,12 +703,14 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
 ;; Capture as bytes
 (-> (bp/process {:out :bytes} "echo" "output") deref :out)
 ;; => #object["[B" ... ]
-```
+----
 
-#### 4. Providing Input
+[[comparison-input]]
+==== 4. Providing Input
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Manual stdin writing
@@ -647,21 +723,24 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
     (.waitFor proc)
     output))
 ;; => "input\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Direct string input
 (-> (bp/process {:in "input\n" :out :string} "cat") deref :out)
 ;; => "input\n"
-```
+----
 
-#### 5. Handling Non-Zero Exit Codes
+[[comparison-exit-codes]]
+==== 5. Handling Non-Zero Exit Codes
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; exec throws on non-zero
@@ -675,10 +754,11 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
 (let [proc (cjp/start "sh" "-c" "exit 1")]
   (.waitFor proc))
 ;; => 1
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; shell throws by default
@@ -691,12 +771,14 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
 ;; Use :continue to prevent throwing
 (-> (bp/shell {:continue true :out :string} "sh" "-c" "exit 1") :exit)
 ;; => 1
-```
+----
 
-#### 6. Environment Variables
+[[comparison-env]]
+==== 6. Environment Variables
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Set environment variables
@@ -706,10 +788,11 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
 ;; Clear inherited environment
 (cjp/exec {:clear-env true :env {"FOO" "bar"}} "sh" "-c" "echo $FOO")
 ;; => "bar\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Add to existing environment
@@ -723,32 +806,37 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
                 "sh" "-c" "echo $FOO") 
     deref :out)
 ;; => "bar\n"
-```
+----
 
-#### 7. Working Directory
+[[comparison-working-dir]]
+==== 7. Working Directory
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Execute in different directory
 (cjp/exec {:dir "/tmp"} "pwd")
 ;; => "/tmp\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Execute in different directory
 (-> (bp/process {:dir "/tmp" :out :string} "pwd") deref :out)
 ;; => "/tmp\n"
-```
+----
 
-#### 8. Process Piping
+[[comparison-piping]]
+==== 8. Process Piping
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp]
          '[clojure.java.io :as io])
 
@@ -765,10 +853,11 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
     (.waitFor proc2)
     output))
 ;; => "HELLO\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Built-in pipeline support
@@ -777,12 +866,14 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
     (bp/process {:out :string} "cat")
     deref :out)
 ;; => "HELLO\n"
-```
+----
 
-#### 9. Redirecting stderr
+[[comparison-stderr]]
+==== 9. Redirecting stderr
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Redirect stderr to stdout
@@ -791,22 +882,25 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
   (.waitFor proc)
   output)
 ;; => "out\nerr\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Redirect stderr to stdout
 (-> (bp/process {:err :out :out :string} "sh" "-c" "echo out; echo err >&2")
     deref :out)
 ;; => "out\nerr\n"
-```
+----
 
-#### 10. File I/O
+[[comparison-file-io]]
+==== 10. File I/O
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp]
          '[clojure.java.io :as io])
 
@@ -821,10 +915,11 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
   (.waitFor proc)
   (slurp "/tmp/test-output.txt"))
 ;; => "output\n"
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp]
          '[clojure.java.io :as io])
 
@@ -839,12 +934,14 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
     deref)
 (slurp "/tmp/test-output2.txt")
 ;; => "output\n"
-```
+----
 
-#### 11. Checking if Process is Alive
+[[comparison-process-control]]
+==== 11. Checking if Process is Alive
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; Check if alive
@@ -853,10 +950,11 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
     (.destroy proc)
     alive))
 ;; => true
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Check if alive
@@ -865,33 +963,37 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
     (bp/destroy proc)
     alive))
 ;; => true
-```
+----
 
-#### 12. Tokenization
+[[comparison-tokenization]]
+==== 12. Tokenization
 
-**clojure.java.process:**
-```clojure
+*clojure.java.process:*
+[source,clojure]
+----
 (require '[clojure.java.process :as cjp])
 
 ;; No automatic tokenization - provide args separately
 (cjp/exec "ls" "-la")
 ;; => "total ...\n..."
-```
+----
 
-**babashka.process:**
-```clojure
+*babashka.process:*
+[source,clojure]
+----
 (require '[babashka.process :as bp])
 
 ;; Automatic tokenization of first argument
 (-> (bp/shell {:out :string} "ls -la") :out)
 ;; => "total ...\n..."
-```
+----
 
-### Migration Guide
+=== Migration Guide
 
-#### From clojure.java.process to babashka.process
+==== From clojure.java.process to babashka.process
 
-```clojure
+[source,clojure]
+----
 ;; Before (clojure.java.process)
 (require '[clojure.java.process :as cjp])
 (cjp/exec "echo" "hello")
@@ -901,11 +1003,12 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
 (-> (bp/shell {:out :string} "echo hello") :out)
 ;; or
 (-> (bp/sh "echo" "hello") :out)
-```
+----
 
-#### From babashka.process to clojure.java.process
+==== From babashka.process to clojure.java.process
 
-```clojure
+[source,clojure]
+----
 ;; Before (babashka.process)
 (require '[babashka.process :as bp])
 (-> (bp/shell {:out :string} "echo hello") :out)
@@ -913,83 +1016,88 @@ Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` pr
 ;; After (clojure.java.process)
 (require '[clojure.java.process :as cjp])
 (cjp/exec "echo" "hello")
-```
+----
 
-### Key Differences Summary
+=== Key Differences Summary
 
-1. **Return Values**: `clojure.java.process/exec` returns a string directly, while `babashka.process` functions return process maps that need to be dereferenced and accessed via `:out`
+1. *Return Values*: `clojure.java.process/exec` returns a string directly, while `babashka.process` functions return process maps that need to be dereferenced and accessed via `:out`
 
-2. **Input Handling**: `clojure.java.process` requires manual stream manipulation for input, while `babashka.process` accepts `:in` as a string, file, or stream
+2. *Input Handling*: `clojure.java.process` requires manual stream manipulation for input, while `babashka.process` accepts `:in` as a string, file, or stream
 
-3. **Piping**: `clojure.java.process` requires manual `io/copy` between processes, while `babashka.process` has built-in pipeline support
+3. *Piping*: `clojure.java.process` requires manual `io/copy` between processes, while `babashka.process` has built-in pipeline support
 
-4. **Error Handling**: Both throw on non-zero exit by default (`exec`/`shell`), but `babashka.process` has more flexible options with `:continue` and `check`
+4. *Error Handling*: Both throw on non-zero exit by default (`exec`/`shell`), but `babashka.process` has more flexible options with `:continue` and `check`
 
-5. **Convenience**: `babashka.process` provides more convenience features like automatic tokenization and simpler output capture
+5. *Convenience*: `babashka.process` provides more convenience features like automatic tokenization and simpler output capture
 
-6. **Portability**: `clojure.java.process` is built into Clojure 1.12+, while `babashka.process` requires a dependency (but is built into Babashka)
+6. *Portability*: `clojure.java.process` is built into Clojure 1.12+ and Babashka, while `babashka.process` requires a dependency in Clojure (but is built into Babashka)
 
 Choose `clojure.java.process` when:
-- You're using Clojure 1.12+ and want zero dependencies
-- You need fine-grained control over process streams
-- You're building a library that should minimize dependencies
+
+* You're using Clojure 1.12+ or Babashka and want zero dependencies
+* You need fine-grained control over process streams
+* You're building a library that should minimize dependencies
 
 Choose `babashka.process` when:
-- You want more convenience features and simpler API
-- You're using Babashka (where it's built-in)
-- You need built-in piping support
-- You want automatic string tokenization
 
-## Running the Tests
+* You want more convenience features and simpler API
+* You're using Babashka (where it's built-in)
+* You need built-in piping support
+* You want automatic string tokenization
+
+== Running the Tests
 
 To run the tests using Cognitect's test-runner:
 
-```shell
+[source,shell]
+----
 ./script/test
-```
+----
 
 Or run specific tests:
 
-```shell
+[source,shell]
+----
 clojure -M:test -n clojure.java.process-test
-```
+----
 
 Filter by test name:
 
-```shell
+[source,shell]
+----
 clojure -M:test -v clojure.java.process-test/test-exec-simple-command
-```
+----
 
-## Test Coverage
+== Test Coverage
 
 The test suite includes 159 tests covering:
 
-- **Basic exec operations** (30+ tests) - Simple command execution, arguments, output capture
-- **Process lifecycle** (25+ tests) - Starting, waiting, exit codes, process control
-- **Stream handling** (20+ tests) - stdin, stdout, stderr, bidirectional communication
-- **Environment and directory** (15+ tests) - Environment variables, working directory
-- **File I/O** (15+ tests) - File redirects, reading from files, writing to files
-- **Process pipelines** (20+ tests) - Connecting multiple processes, producer-consumer patterns
-- **Concurrent execution** (15+ tests) - Running processes in parallel, concurrent I/O
-- **Error handling** (15+ tests) - Non-zero exits, command not found, exceptions
-- **Text processing** (20+ tests) - grep, sed, awk, sort, cut, and other utilities
-- **Advanced use cases** (20+ tests) - Checksums, encoding, shell features
+* *Basic exec operations* (30+ tests) - Simple command execution, arguments, output capture
+* *Process lifecycle* (25+ tests) - Starting, waiting, exit codes, process control
+* *Stream handling* (20+ tests) - stdin, stdout, stderr, bidirectional communication
+* *Environment and directory* (15+ tests) - Environment variables, working directory
+* *File I/O* (15+ tests) - File redirects, reading from files, writing to files
+* *Process pipelines* (20+ tests) - Connecting multiple processes, producer-consumer patterns
+* *Concurrent execution* (15+ tests) - Running processes in parallel, concurrent I/O
+* *Error handling* (15+ tests) - Non-zero exits, command not found, exceptions
+* *Text processing* (20+ tests) - grep, sed, awk, sort, cut, and other utilities
+* *Advanced use cases* (20+ tests) - Checksums, encoding, shell features
 
 All tests pass in approximately 11 seconds.
 
-## Continuous Integration
+== Continuous Integration
 
-This repository includes a [GitHub Actions workflow](.github/workflows/clojure-test.yml) to automatically run the tests on every push and pull request to `main`.
+This repository includes a link:.github/workflows/clojure-test.yml[GitHub Actions workflow] to automatically run the tests on every push and pull request to `main`.
 
-## Contributing
+== Contributing
 
 If you discover new features or patterns, please open a PR or issue to help improve this reference for everyone!
 
-## Resources
+== Resources
 
-- [Clojure Java Process Documentation](https://clojure.github.io/clojure/branch-master/clojure.java.process-api.html)
-- [Java ProcessBuilder](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ProcessBuilder.html)
-- [Java Process](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Process.html)
-- [babashka/process](https://github.com/babashka/process) - Similar library for babashka
+* https://clojure.github.io/clojure/branch-master/clojure.java.process-api.html[Clojure Java Process Documentation]
+* https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ProcessBuilder.html[Java ProcessBuilder]
+* https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Process.html[Java Process]
+* https://github.com/babashka/process[babashka/process] - Similar library for babashka
 
 ---

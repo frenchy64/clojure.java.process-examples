@@ -13,9 +13,9 @@
   {:replace-deps {org.clojure/clojure {:mvn/version "1.12.3"}
                   com.github.lread/test-doc-blocks {:mvn/version "1.2.21"}}
    :exec-fn lread.test-doc-blocks/gen-tests
-   :exec-args {:docs ["README.md"]
+   :exec-args {:docs ["README.adoc"]
                :platform :clj}
-   :main-opts ["-m" "lread.test-doc-blocks" "gen-tests" "README.md" "--platform" "clj"]}
+   :main-opts ["-m" "lread.test-doc-blocks" "gen-tests" "README.adoc" "--platform" "clj"]}
   :test-doc-blocks
   {:extra-paths ["target/test-doc-blocks/test"]
    :extra-deps {com.cognitect/test-runner

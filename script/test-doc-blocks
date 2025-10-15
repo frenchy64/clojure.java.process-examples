@@ -2,7 +2,7 @@
 
 (require '[babashka.process :as p])
 
-(println "Generating tests from README.md code blocks...")
+(println "Generating tests from README.adoc code blocks...")
 (let [result (p/shell {:continue true} "clojure -M:gen-doc-tests")]
   (when (not (zero? (:exit result)))
     (println "Failed to generate doc tests")
