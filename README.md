@@ -45,31 +45,37 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 ### Working with Input
 
 ```clojure
-;; Helper function to execute with string input
-(defn exec-with-input
-  "Execute a command with string input. Returns output string."
-  [input & args]
-  (let [proc (apply process/start args)
-        stdin (process/stdin proc)
-        stdout (process/stdout proc)]
-    (.write stdin (.getBytes input))
-    (.close stdin)
-    (let [output (slurp stdout)
-          exit-code (.waitFor proc)]
-      (if (zero? exit-code)
-        output
-        (throw (RuntimeException. (str "Process exited with code " exit-code)))))))
-
-;; Use cat with input
-(exec-with-input "test input\n" "cat")
+;; Execute cat with input by writing to stdin
+(let [proc (process/start "cat")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "test input\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "test input\n"
 
 ;; Pipe input through grep
-(exec-with-input "match\nno match\nmatch again" "grep" "^match$")
+(let [proc (process/start "grep" "^match$")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "match\nno match\nmatch again"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "match\n"
 
 ;; Transform text with tr
-(exec-with-input "hello\n" "tr" "a-z" "A-Z")
+(let [proc (process/start "tr" "a-z" "A-Z")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "hello\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "HELLO\n"
 ```
 
@@ -397,31 +403,80 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 
 ```clojure
 ;; Sort lines
-(exec-with-input "banana\ncherry\napple\n" "sort")
+(let [proc (process/start "sort")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "banana\ncherry\napple\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "apple\nbanana\ncherry\n"
 
 ;; Count lines
-(exec-with-input "line1\nline2\nline3\n" "wc" "-l")
-;; => "3\n"
+(let [proc (process/start "wc" "-l")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "line1\nline2\nline3\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    (str/trim output)))
+;; => "3"
 
 ;; Extract fields
-(exec-with-input "1:2:3\n4:5:6\n" "cut" "-d" ":" "-f" "2")
+(let [proc (process/start "cut" "-d" ":" "-f" "2")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "1:2:3\n4:5:6\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "2\n5\n"
 
 ;; Transform text with sed
-(exec-with-input "hello world\n" "sed" "s/world/universe/")
+(let [proc (process/start "sed" "s/world/universe/")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "hello world\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "hello universe\n"
 
 ;; Process with awk
-(exec-with-input "hello world\n" "awk" "{print $2}")
+(let [proc (process/start "awk" "{print $2}")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "hello world\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "world\n"
 
 ;; Reverse lines with tac
-(exec-with-input "first\nsecond\nthird\n" "tac")
+(let [proc (process/start "tac")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "first\nsecond\nthird\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "third\nsecond\nfirst\n"
 
 ;; Remove duplicates
-(exec-with-input "apple\napple\nbanana\napple\n" "uniq")
+(let [proc (process/start "uniq")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "apple\napple\nbanana\napple\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "apple\nbanana\napple\n"
 ```
 
@@ -429,15 +484,36 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 
 ```clojure
 ;; Base64 encoding
-(exec-with-input "hello\n" "base64")
+(let [proc (process/start "base64")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "hello\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "aGVsbG8K\n"
 
 ;; Base64 decoding
-(exec-with-input "aGVsbG8K\n" "base64" "-d")
+(let [proc (process/start "base64" "-d")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "aGVsbG8K\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "hello\n"
 
 ;; Calculate checksums
-(exec-with-input "test\n" "sha256sum")
+(let [proc (process/start "sha256sum")
+      stdin (process/stdin proc)
+      stdout (process/stdout proc)]
+  (.write stdin (.getBytes "test\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
 ;; => "hash-value  -\n"
 
 ;; Execute with shell features
