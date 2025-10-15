@@ -9,6 +9,9 @@ I have manually reviewed the code, confirmed that all examples and tests compile
 using automated testing, and checked the prose and recommendations for accuracy and clarity.  
 However, I did not write any of the content myself, and I am not an expert in using Java Process APIs.  
 Use this material at your own discretion; while I have applied my best judgement, there may be errors or omissions.
+
+Please audit the test runners and GitHub Actions workflow results (as I did) to convince yourself these examples
+actually work as advertised.
 ====
 
 == What is `clojure.java.process`?
