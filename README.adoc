@@ -717,6 +717,7 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
     deref
     :out
     (String. "UTF-8"))
+;=> "output"
 ----
 
 [[comparison-input]]
