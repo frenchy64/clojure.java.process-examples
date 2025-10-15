@@ -17,7 +17,7 @@
                :platform :clj}
    :main-opts ["-m" "lread.test-doc-blocks" "gen-tests" "README.adoc" "--platform" "clj"]}
   :test-doc-blocks
-  {:extra-paths ["target/test-doc-blocks/test"]
+  {:extra-paths ["target/test-doc-blocks/test" "test"]
    :extra-deps {com.cognitect/test-runner
                 {:git/url "https://github.com/cognitect-labs/test-runner"
                  :sha "dfb30dd6605cb6c0efc275e1df1736f6e90d4d73"}}
