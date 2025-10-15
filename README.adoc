@@ -713,7 +713,10 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 ;; => "output\n"
 
 ;; Capture as bytes
-(-> (bp/process {:out :bytes} "echo" "output") deref :out)
+(-> (bp/process {:out :bytes} "echo" "output")
+    deref
+    :out
+    (String. "UTF-8"))
 ----
 
 [[comparison-input]]
@@ -803,7 +806,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 ;; Manipulate environment programmatically - select subset
 (cjp/exec {:clear-env true 
            :env (select-keys (System/getenv) ["PATH" "HOME"])} 
-          "sh" "-c" "echo $PATH")
+          "sh" "-c" "test -n \"$PATH\" && echo 1 || echo 0")
+;; => "1\n"
 ----
 
 *babashka.process:*
@@ -824,7 +828,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 ;; Manipulate environment programmatically - select subset
 (:out (bp/shell {:env (select-keys (System/getenv) ["PATH" "HOME"]) 
                  :out :string} 
-                "echo $PATH"))
+                "test -n \"$PATH\" && echo 1 || echo 0"))
+;; => "1\n"
 ----
 
 [[comparison-working-dir]]
