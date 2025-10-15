@@ -1,0 +1,13 @@
+#!/usr/bin/env bb
+
+(require '[babashka.process :as p])
+
+(println "Generating tests from README.md code blocks...")
+(let [result (p/shell {:continue true} "clojure -M:gen-doc-tests")]
+  (when (not (zero? (:exit result)))
+    (println "Failed to generate doc tests")
+    (System/exit 1)))
+
+(println "\nRunning generated doc block tests...")
+(let [result (p/shell {:continue true} "clojure -M:test-doc-blocks")]
+  (System/exit (:exit result)))

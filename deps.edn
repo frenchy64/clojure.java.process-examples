@@ -7,4 +7,18 @@
                 {:git/url "https://github.com/cognitect-labs/test-runner"
                  :sha "dfb30dd6605cb6c0efc275e1df1736f6e90d4d73"}}
    :main-opts ["-m" "cognitect.test-runner"]
+   :exec-fn cognitect.test-runner.api/test}
+  :gen-doc-tests
+  {:replace-deps {org.clojure/clojure {:mvn/version "1.12.3"}
+                  com.github.lread/test-doc-blocks {:mvn/version "1.2.21"}}
+   :exec-fn lread.test-doc-blocks/gen-tests
+   :exec-args {:docs ["README.md"]
+               :platform :clj}
+   :main-opts ["-m" "lread.test-doc-blocks" "gen-tests" "README.md" "--platform" "clj"]}
+  :test-doc-blocks
+  {:extra-paths ["target/test-doc-blocks/test"]
+   :extra-deps {com.cognitect/test-runner
+                {:git/url "https://github.com/cognitect-labs/test-runner"
+                 :sha "dfb30dd6605cb6c0efc275e1df1736f6e90d4d73"}}
+   :main-opts ["-m" "cognitect.test-runner"]
    :exec-fn cognitect.test-runner.api/test}}}

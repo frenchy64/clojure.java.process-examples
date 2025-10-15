@@ -23,5 +23,12 @@ jobs:
           curl -O https://download.clojure.org/install/linux-install.sh
           chmod +x linux-install.sh
           sudo ./linux-install.sh
+      - name: Install Babashka
+        run: |
+          curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install
+          chmod +x install
+          sudo ./install
       - name: Run tests
         run: ./script/test
+      - name: Run doc block tests
+        run: ./script/test-doc-blocks
