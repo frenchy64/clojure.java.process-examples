@@ -603,7 +603,7 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 
 | <<comparison-working-dir,Set working directory>>
 | `(cjp/exec {:dir "/tmp"} "pwd")`
-| `(-> (bp/shell {:dir "/tmp" :out :string} "pwd") :out)`
+| `(:out (bp/shell {:dir "/tmp" :out :string} "pwd"))`
 
 | <<comparison-env,Add environment variable>>
 | `(cjp/exec {:env {"FOO" "bar"}} "sh" "-c" "echo $FOO")`
@@ -614,8 +614,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 | `(:in proc)`, `(:out proc)`, `(:err proc)` in map
 
 | <<comparison-tokenization,Tokenize command string>>
-| No tokenization: `(cjp/exec "echo" "foo bar")` → `"foo bar\n"`
-| Automatic: `(-> (bp/shell {:out :string} "echo foo bar") :out)` → `"foo bar\n"`
+| No tokenization: `(cjp/exec "printf" "%s\\n" "a b")` → `"a b\n"`
+| Automatic: `(:out (bp/shell {:out :string} "printf %s\\n 'a b'"))` → `"a\nb\n"`
 
 | <<comparison-process-control,Check if process alive>>
 | `(.isAlive proc)`
@@ -799,11 +799,10 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 ;; => "bar\n"
 
 ;; Manipulate environment programmatically - select subset
-(let [current-env (System/getenv)
-      selected-env (select-keys current-env ["PATH" "HOME"])]
-  (cjp/exec {:clear-env true :env (merge selected-env {"FOO" "bar"})} 
-            "sh" "-c" "echo $FOO"))
-;; => "bar\n"
+(cjp/exec {:clear-env true 
+           :env (select-keys (System/getenv) ["PATH" "HOME"])} 
+          "sh" "-c" "echo $PATH")
+;; => "/usr/local/bin:/usr/bin:..."
 ----
 
 *babashka.process:*
@@ -822,12 +821,10 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 ;; => "bar\n"
 
 ;; Manipulate environment programmatically - select subset
-(let [current-env (System/getenv)
-      selected-env (select-keys current-env ["PATH" "HOME"])]
-  (-> (bp/shell {:env (merge selected-env {"FOO" "bar"}) :out :string} 
-                "echo $FOO")
-      :out))
-;; => "bar\n"
+(:out (bp/shell {:env (select-keys (System/getenv) ["PATH" "HOME"]) 
+                 :out :string} 
+                "echo $PATH"))
+;; => "/usr/local/bin:/usr/bin:..."
 ----
 
 [[comparison-working-dir]]
@@ -849,7 +846,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Execute in different directory
-(-> (bp/shell {:dir "/tmp" :out :string} "pwd") :out)
+(:out (bp/shell {:dir "/tmp" :out :string} 
+                "pwd"))
 ;; => "/tmp\n"
 ----
 
@@ -966,8 +964,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (let [proc (cjp/start "sleep" "10")
       alive (.isAlive proc)]
   (.destroy proc)
-  alive)
-;; => true
+  [alive (.isAlive proc)])
+;; => [true false]
 ----
 
 *babashka.process:*
@@ -979,8 +977,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (let [proc (bp/process "sleep" "10")
       alive (bp/alive? proc)]
   (bp/destroy proc)
-  alive)
-;; => true
+  [alive (.isAlive proc)])
+;; => [true false]
 ----
 
 [[comparison-tokenization]]
@@ -992,13 +990,13 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[clojure.java.process :as cjp])
 
 ;; No automatic tokenization - provide args separately
-;; Single argument containing space
-(cjp/exec "echo" "foo bar")
-;; => "foo bar\n"
+;; Single argument with space is passed as-is
+(cjp/exec "printf" "%s\\n" "a b")
+;; => "a b\n"
 
-;; Multiple arguments - different output
-(cjp/exec "echo" "foo" "bar")
-;; => "foo bar\n"
+;; To split, pass as separate arguments
+(cjp/exec "printf" "%s\\n" "a" "b")
+;; => "a\nb\n"
 ----
 
 *babashka.process:*
@@ -1006,9 +1004,9 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 ----
 (require '[babashka.process :as bp])
 
-;; Automatic tokenization of first argument
-(-> (bp/shell {:out :string} "echo foo bar") :out)
-;; => "foo bar\n"
+;; Automatic tokenization - string is split on whitespace
+(:out (bp/shell {:out :string} "printf %s\\n 'a b'"))
+;; => "a\nb\n"
 ----
 
 === Key Differences Summary
