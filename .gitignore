@@ -1,0 +1,11 @@
+/.cpcache
+/.clj-kondo
+/.nrepl-port
+/.shadow-cljs
+/.lsp
+/.calva
+/.cider-repl-history
+target/
+.DS_Store
+.idea/
+.vscode/
