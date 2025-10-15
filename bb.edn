@@ -1,0 +1,19 @@
+{:paths ["test"]
+ :tasks
+ {:requires ([babashka.fs :as fs])
+  :init (do
+          (defn test-runner []
+            (require 'clojure.test)
+            (require 'clojure.java.process-test)
+            (let [summary ((resolve 'clojure.test/run-tests) 'clojure.java.process-test)]
+              (println)
+              (println "Ran" (+ (:pass summary) (:fail summary) (:error summary)) "tests")
+              (when (or (pos? (:fail summary)) (pos? (:error summary)))
+                (println "FAILED:" (:fail summary) "failures," (:error summary) "errors")
+                (System/exit 1))
+              (println "All tests passed!"))))
+  
+  test {:doc "Run clojure.java.process tests with babashka"
+        :task (do
+                (println "Running tests with babashka...")
+                (test-runner))}}}

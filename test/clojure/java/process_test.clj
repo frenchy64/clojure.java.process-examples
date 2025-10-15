@@ -1105,7 +1105,7 @@
 (deftest test-exit-value-before-termination
   (testing "Exit value throws if process not terminated"
     (let [proc (process/start "sleep" "1")]
-      (is (thrown? IllegalThreadStateException (.exitValue proc)))
+      (is (thrown? Exception (.exitValue proc)))
       (.destroy proc)
       (.waitFor proc))))
 

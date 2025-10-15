@@ -144,7 +144,7 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
       _ @exit-val
       elapsed (- (System/currentTimeMillis) start-time)]
   elapsed)
-;; => ~100 milliseconds
+;; => 100 ; approximately 100 milliseconds
 ```
 
 ### Environment Variables
@@ -303,7 +303,7 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
       start-time (System/currentTimeMillis)]
   (doseq [p procs] (.waitFor p))
   (- (System/currentTimeMillis) start-time))
-;; => ~100ms (not 300ms, they run concurrently)
+;; => 100 ; approximately 100ms (not 300ms, they run concurrently)
 
 ;; Execute multiple commands in parallel
 (let [futures (doall (repeatedly 5 #(future (process/exec "echo" "test"))))]

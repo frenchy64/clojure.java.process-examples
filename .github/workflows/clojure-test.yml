@@ -28,7 +28,9 @@ jobs:
           curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install
           chmod +x install
           sudo ./install
-      - name: Run tests
+      - name: Run tests with Clojure
         run: ./script/test
+      - name: Run tests with Babashka
+        run: ./script/test-bb
       - name: Run doc block tests
         run: ./script/test-doc-blocks
