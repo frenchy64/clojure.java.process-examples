@@ -529,6 +529,417 @@ Here are comprehensive examples (see [test/clojure/java/process_test.clj](test/c
 ;; => "1\n2\n3\n"
 ```
 
+## Comparison with babashka.process
+
+Both `clojure.java.process` (built into Clojure 1.12+) and `babashka.process` provide ways to shell out to external processes. Here's a comprehensive comparison to help you migrate between them or choose the right one for your use case.
+
+### Summary Table
+
+| Feature | clojure.java.process | babashka.process |
+|---------|---------------------|------------------|
+| **Availability** | Built into Clojure 1.12+ | Separate library, built into Babashka |
+| **Basic execution** | `exec` (throws on error) | `shell` (throws on error), `sh` (doesn't throw) |
+| **Async execution** | `start` returns Process | `process` returns process map |
+| **Output capture** | Manual with streams or via exec | `:out :string`, `:out :bytes` |
+| **Input passing** | Manual stream writing | `:in "string"`, `:in (io/file ...)` |
+| **Error handling** | Throws RuntimeException | `check` function, `:continue` option |
+| **Piping** | Manual with `io/copy` | Built-in with `->`, pipeline support |
+| **Working directory** | `:dir` option | `:dir` option |
+| **Environment vars** | `:env` map, `:clear-env` | `:env`, `:extra-env` |
+| **Stream access** | `stdin`, `stdout`, `stderr` functions | Direct map access `:in`, `:out`, `:err` |
+| **Tokenization** | Manual | Automatic for first string arg |
+| **Process control** | Java Process methods | `destroy`, `destroy-tree`, `alive?` |
+
+### Feature-by-Feature Comparison with Examples
+
+#### 1. Basic Command Execution
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Throws on non-zero exit
+(cjp/exec "echo" "Hello")
+;; => "Hello\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Throws on non-zero exit, captures output
+(-> (bp/shell {:out :string} "echo Hello") :out)
+;; => "Hello\n"
+
+;; Doesn't throw by default, like clojure.java.shell/sh
+(-> (bp/sh "echo Hello") :out)
+;; => "Hello\n"
+```
+
+#### 2. Async Process Execution
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Start process and wait later
+(let [proc (cjp/start "sleep" "0.1")]
+  (.waitFor proc)
+  (.exitValue proc))
+;; => 0
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Process returns a map with Process object
+(let [proc (bp/process "sleep" "0.1")]
+  @proc ; deref waits for completion
+  (:exit proc))
+;; => 0
+```
+
+#### 3. Capturing Output
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Using exec (easiest)
+(cjp/exec "echo" "output")
+;; => "output\n"
+
+;; Using start with manual stream handling
+(let [proc (cjp/start "echo" "output")
+      output (slurp (cjp/stdout proc))]
+  (.waitFor proc)
+  output)
+;; => "output\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Capture as string
+(-> (bp/process {:out :string} "echo" "output") deref :out)
+;; => "output\n"
+
+;; Capture as bytes
+(-> (bp/process {:out :bytes} "echo" "output") deref :out)
+;; => #object["[B" ... ]
+```
+
+#### 4. Providing Input
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Manual stdin writing
+(let [proc (cjp/start "cat")
+      stdin (cjp/stdin proc)
+      stdout (cjp/stdout proc)]
+  (.write stdin (.getBytes "input\n"))
+  (.close stdin)
+  (let [output (slurp stdout)]
+    (.waitFor proc)
+    output))
+;; => "input\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Direct string input
+(-> (bp/process {:in "input\n" :out :string} "cat") deref :out)
+;; => "input\n"
+```
+
+#### 5. Handling Non-Zero Exit Codes
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; exec throws on non-zero
+(try
+  (cjp/exec "sh" "-c" "exit 1")
+  (catch Exception e
+    "Failed"))
+;; => "Failed"
+
+;; start doesn't throw, check manually
+(let [proc (cjp/start "sh" "-c" "exit 1")]
+  (.waitFor proc))
+;; => 1
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; shell throws by default
+(try
+  (bp/shell "sh" "-c" "exit 1")
+  (catch Exception e
+    "Failed"))
+;; => "Failed"
+
+;; Use :continue to prevent throwing
+(-> (bp/shell {:continue true :out :string} "sh" "-c" "exit 1") :exit)
+;; => 1
+```
+
+#### 6. Environment Variables
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Set environment variables
+(cjp/exec {:env {"FOO" "bar"}} "sh" "-c" "echo $FOO")
+;; => "bar\n"
+
+;; Clear inherited environment
+(cjp/exec {:clear-env true :env {"FOO" "bar"}} "sh" "-c" "echo $FOO")
+;; => "bar\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Add to existing environment
+(-> (bp/process {:extra-env {"FOO" "bar"} :out :string} 
+                "sh" "-c" "echo $FOO") 
+    deref :out)
+;; => "bar\n"
+
+;; Replace environment
+(-> (bp/process {:env {"FOO" "bar"} :out :string} 
+                "sh" "-c" "echo $FOO") 
+    deref :out)
+;; => "bar\n"
+```
+
+#### 7. Working Directory
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Execute in different directory
+(cjp/exec {:dir "/tmp"} "pwd")
+;; => "/tmp\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Execute in different directory
+(-> (bp/process {:dir "/tmp" :out :string} "pwd") deref :out)
+;; => "/tmp\n"
+```
+
+#### 8. Process Piping
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp]
+         '[clojure.java.io :as io])
+
+;; Manual piping
+(let [proc1 (cjp/start "echo" "hello")
+      proc2 (cjp/start "tr" "a-z" "A-Z")
+      stdout1 (cjp/stdout proc1)
+      stdin2 (cjp/stdin proc2)
+      stdout2 (cjp/stdout proc2)]
+  (io/copy stdout1 stdin2)
+  (.close stdin2)
+  (let [output (slurp stdout2)]
+    (.waitFor proc1)
+    (.waitFor proc2)
+    output))
+;; => "HELLO\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Built-in pipeline support
+(-> (bp/process "echo" "hello")
+    (bp/process "tr" "a-z" "A-Z")
+    (bp/process {:out :string} "cat")
+    deref :out)
+;; => "HELLO\n"
+```
+
+#### 9. Redirecting stderr
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Redirect stderr to stdout
+(let [proc (cjp/start {:err :stdout} "sh" "-c" "echo out; echo err >&2")
+      output (slurp (cjp/stdout proc))]
+  (.waitFor proc)
+  output)
+;; => "out\nerr\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Redirect stderr to stdout
+(-> (bp/process {:err :out :out :string} "sh" "-c" "echo out; echo err >&2")
+    deref :out)
+;; => "out\nerr\n"
+```
+
+#### 10. File I/O
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp]
+         '[clojure.java.io :as io])
+
+;; Read from file
+(spit "/tmp/test-input.txt" "content\n")
+(cjp/exec {:in (cjp/from-file (io/file "/tmp/test-input.txt"))} "cat")
+;; => "content\n"
+
+;; Write to file
+(let [proc (cjp/start {:out (cjp/to-file (io/file "/tmp/test-output.txt"))} 
+                      "echo" "output")]
+  (.waitFor proc)
+  (slurp "/tmp/test-output.txt"))
+;; => "output\n"
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp]
+         '[clojure.java.io :as io])
+
+;; Read from file
+(spit "/tmp/test-input2.txt" "content\n")
+(-> (bp/process {:in (io/file "/tmp/test-input2.txt") :out :string} "cat")
+    deref :out)
+;; => "content\n"
+
+;; Write to file
+(-> (bp/process {:out (io/file "/tmp/test-output2.txt")} "echo" "output")
+    deref)
+(slurp "/tmp/test-output2.txt")
+;; => "output\n"
+```
+
+#### 11. Checking if Process is Alive
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; Check if alive
+(let [proc (cjp/start "sleep" "10")]
+  (let [alive (.isAlive proc)]
+    (.destroy proc)
+    alive))
+;; => true
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Check if alive
+(let [proc (bp/process "sleep" "10")]
+  (let [alive (bp/alive? proc)]
+    (bp/destroy proc)
+    alive))
+;; => true
+```
+
+#### 12. Tokenization
+
+**clojure.java.process:**
+```clojure
+(require '[clojure.java.process :as cjp])
+
+;; No automatic tokenization - provide args separately
+(cjp/exec "ls" "-la")
+;; => "total ...\n..."
+```
+
+**babashka.process:**
+```clojure
+(require '[babashka.process :as bp])
+
+;; Automatic tokenization of first argument
+(-> (bp/shell {:out :string} "ls -la") :out)
+;; => "total ...\n..."
+```
+
+### Migration Guide
+
+#### From clojure.java.process to babashka.process
+
+```clojure
+;; Before (clojure.java.process)
+(require '[clojure.java.process :as cjp])
+(cjp/exec "echo" "hello")
+
+;; After (babashka.process)
+(require '[babashka.process :as bp])
+(-> (bp/shell {:out :string} "echo hello") :out)
+;; or
+(-> (bp/sh "echo" "hello") :out)
+```
+
+#### From babashka.process to clojure.java.process
+
+```clojure
+;; Before (babashka.process)
+(require '[babashka.process :as bp])
+(-> (bp/shell {:out :string} "echo hello") :out)
+
+;; After (clojure.java.process)
+(require '[clojure.java.process :as cjp])
+(cjp/exec "echo" "hello")
+```
+
+### Key Differences Summary
+
+1. **Return Values**: `clojure.java.process/exec` returns a string directly, while `babashka.process` functions return process maps that need to be dereferenced and accessed via `:out`
+
+2. **Input Handling**: `clojure.java.process` requires manual stream manipulation for input, while `babashka.process` accepts `:in` as a string, file, or stream
+
+3. **Piping**: `clojure.java.process` requires manual `io/copy` between processes, while `babashka.process` has built-in pipeline support
+
+4. **Error Handling**: Both throw on non-zero exit by default (`exec`/`shell`), but `babashka.process` has more flexible options with `:continue` and `check`
+
+5. **Convenience**: `babashka.process` provides more convenience features like automatic tokenization and simpler output capture
+
+6. **Portability**: `clojure.java.process` is built into Clojure 1.12+, while `babashka.process` requires a dependency (but is built into Babashka)
+
+Choose `clojure.java.process` when:
+- You're using Clojure 1.12+ and want zero dependencies
+- You need fine-grained control over process streams
+- You're building a library that should minimize dependencies
+
+Choose `babashka.process` when:
+- You want more convenience features and simpler API
+- You're using Babashka (where it's built-in)
+- You need built-in piping support
+- You want automatic string tokenization
+
 ## Running the Tests
 
 To run the tests using Cognitect's test-runner:
