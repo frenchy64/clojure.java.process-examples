@@ -590,20 +590,20 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
   `"test\n"`
 
 | <<comparison-input,Pass string as input>>
-| Manual: get stdin, write bytes, close
+| `(.write (cjp/stdin proc) (.getBytes "data"))`
 | `(bp/process {:in "data"} "cat")`
 
 | <<comparison-exit-codes,Handle non-zero exit>>
-| `exec` throws, `start` returns exit code
-| `shell` throws, `process` with `:continue true` doesn't
+| `exec` throws, `start` returns `Process`: `(.waitFor proc)`
+| `shell` throws, `process` with `:continue true` doesn't: `(:exit proc)`
 
 | <<comparison-piping,Pipe between processes>>
-| Manual with `io/copy`
+| `(io/copy (cjp/stdout proc1) (cjp/stdin proc2))`
 | `(-> (bp/process "echo" "hi") (bp/process "tr" "a-z" "A-Z"))`
 
 | <<comparison-working-dir,Set working directory>>
 | `(cjp/exec {:dir "/tmp"} "pwd")`
-| `(bp/process {:dir "/tmp"} "pwd")`
+| `(-> (bp/shell {:dir "/tmp" :out :string} "pwd") :out)`
 
 | <<comparison-env,Add environment variable>>
 | `(cjp/exec {:env {"FOO" "bar"}} "sh" "-c" "echo $FOO")`
@@ -614,8 +614,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 | `(:in proc)`, `(:out proc)`, `(:err proc)` in map
 
 | <<comparison-tokenization,Tokenize command string>>
-| Manual - provide separate args
-| Automatic: `(bp/shell "ls -la")` splits to `["ls" "-la"]`
+| No tokenization: `(cjp/exec "echo" "foo bar")` → `"foo bar\n"`
+| Automatic: `(-> (bp/shell {:out :string} "echo foo bar") :out)` → `"foo bar\n"`
 
 | <<comparison-process-control,Check if process alive>>
 | `(.isAlive proc)`
@@ -797,6 +797,13 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 ;; Clear inherited environment
 (cjp/exec {:clear-env true :env {"FOO" "bar"}} "sh" "-c" "echo $FOO")
 ;; => "bar\n"
+
+;; Manipulate environment programmatically - select subset
+(let [current-env (System/getenv)
+      selected-env (select-keys current-env ["PATH" "HOME"])]
+  (cjp/exec {:clear-env true :env (merge selected-env {"FOO" "bar"})} 
+            "sh" "-c" "echo $FOO"))
+;; => "bar\n"
 ----
 
 *babashka.process:*
@@ -805,15 +812,21 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Add to existing environment
-(-> (bp/process {:extra-env {"FOO" "bar"} :out :string} 
-                "sh" "-c" "echo $FOO") 
-    deref :out)
+(-> (bp/shell {:extra-env {"FOO" "bar"} :out :string} "echo $FOO") 
+    :out)
 ;; => "bar\n"
 
 ;; Replace environment
-(-> (bp/process {:env {"FOO" "bar"} :out :string} 
-                "sh" "-c" "echo $FOO") 
-    deref :out)
+(-> (bp/shell {:env {"FOO" "bar"} :out :string} "echo $FOO") 
+    :out)
+;; => "bar\n"
+
+;; Manipulate environment programmatically - select subset
+(let [current-env (System/getenv)
+      selected-env (select-keys current-env ["PATH" "HOME"])]
+  (-> (bp/shell {:env (merge selected-env {"FOO" "bar"}) :out :string} 
+                "echo $FOO")
+      :out))
 ;; => "bar\n"
 ----
 
@@ -836,7 +849,7 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Execute in different directory
-(-> (bp/process {:dir "/tmp" :out :string} "pwd") deref :out)
+(-> (bp/shell {:dir "/tmp" :out :string} "pwd") :out)
 ;; => "/tmp\n"
 ----
 
@@ -886,10 +899,7 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[clojure.java.process :as cjp])
 
 ;; Redirect stderr to stdout
-(let [proc (cjp/start {:err :stdout} "sh" "-c" "echo out; echo err >&2")
-      output (slurp (cjp/stdout proc))]
-  (.waitFor proc)
-  output)
+(cjp/exec {:err :stdout} "sh" "-c" "echo out; echo err >&2")
 ;; => "out\nerr\n"
 ----
 
@@ -899,8 +909,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Redirect stderr to stdout
-(-> (bp/process {:err :out :out :string} "sh" "-c" "echo out; echo err >&2")
-    deref :out)
+(-> (bp/shell {:err :out :out :string} "sh -c 'echo out; echo err >&2'")
+    :out)
 ;; => "out\nerr\n"
 ----
 
@@ -934,13 +944,12 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 
 ;; Read from file
 (spit "/tmp/test-input2.txt" "content\n")
-(-> (bp/process {:in (io/file "/tmp/test-input2.txt") :out :string} "cat")
-    deref :out)
+(-> (bp/shell {:in (io/file "/tmp/test-input2.txt") :out :string} "cat")
+    :out)
 ;; => "content\n"
 
 ;; Write to file
-(-> (bp/process {:out (io/file "/tmp/test-output2.txt")} "echo" "output")
-    deref)
+(bp/shell {:out (io/file "/tmp/test-output2.txt")} "echo output")
 (slurp "/tmp/test-output2.txt")
 ;; => "output\n"
 ----
@@ -954,10 +963,10 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[clojure.java.process :as cjp])
 
 ;; Check if alive
-(let [proc (cjp/start "sleep" "10")]
-  (let [alive (.isAlive proc)]
-    (.destroy proc)
-    alive))
+(let [proc (cjp/start "sleep" "10")
+      alive (.isAlive proc)]
+  (.destroy proc)
+  alive)
 ;; => true
 ----
 
@@ -967,10 +976,10 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Check if alive
-(let [proc (bp/process "sleep" "10")]
-  (let [alive (bp/alive? proc)]
-    (bp/destroy proc)
-    alive))
+(let [proc (bp/process "sleep" "10")
+      alive (bp/alive? proc)]
+  (bp/destroy proc)
+  alive)
 ;; => true
 ----
 
@@ -983,8 +992,13 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[clojure.java.process :as cjp])
 
 ;; No automatic tokenization - provide args separately
-(cjp/exec "ls" "-la")
-;; => "total ...\n..."
+;; Single argument containing space
+(cjp/exec "echo" "foo bar")
+;; => "foo bar\n"
+
+;; Multiple arguments - different output
+(cjp/exec "echo" "foo" "bar")
+;; => "foo bar\n"
 ----
 
 *babashka.process:*
@@ -993,38 +1007,8 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Automatic tokenization of first argument
-(-> (bp/shell {:out :string} "ls -la") :out)
-;; => "total ...\n..."
-----
-
-=== Migration Guide
-
-==== From clojure.java.process to babashka.process
-
-[source,clojure]
-----
-;; Before (clojure.java.process)
-(require '[clojure.java.process :as cjp])
-(cjp/exec "echo" "hello")
-
-;; After (babashka.process)
-(require '[babashka.process :as bp])
-(-> (bp/shell {:out :string} "echo hello") :out)
-;; or
-(-> (bp/sh "echo" "hello") :out)
-----
-
-==== From babashka.process to clojure.java.process
-
-[source,clojure]
-----
-;; Before (babashka.process)
-(require '[babashka.process :as bp])
-(-> (bp/shell {:out :string} "echo hello") :out)
-
-;; After (clojure.java.process)
-(require '[clojure.java.process :as cjp])
-(cjp/exec "echo" "hello")
+(-> (bp/shell {:out :string} "echo foo bar") :out)
+;; => "foo bar\n"
 ----
 
 === Key Differences Summary
