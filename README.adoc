@@ -27,7 +27,6 @@ The library provides the following main functions:
 * *`exit-ref`* - Get a reference that yields the exit code when dereferenced
 * *`to-file`* - Create a redirect to write to a file
 * *`from-file`* - Create a redirect to read from a file
-* *`io-task`* - Helper for async I/O operations
 
 == Example Usage
 
@@ -102,11 +101,11 @@ Here are comprehensive examples (see link:test/clojure/java/process_test.clj[tes
 
 ;; Check if process is alive
 (.isAlive proc)
-;; => false (after waiting)
+;; => false ; after waiting
 
 ;; Get process ID
 (.pid proc)
-;; => 12345 (some number)
+;; => 12345 ; some number
 ----
 
 === Stream Handling
@@ -187,7 +186,7 @@ Here are comprehensive examples (see link:test/clojure/java/process_test.clj[tes
 ;; Execute in a different directory
 (let [temp-dir (System/getProperty "java.io.tmpdir")]
   (process/exec {:dir temp-dir} "pwd"))
-;; => "/tmp\n" (or similar)
+;; => "/tmp\n" ; or similar
 
 ;; Start process in specific directory
 (let [home (System/getProperty "user.home")
@@ -195,7 +194,7 @@ Here are comprehensive examples (see link:test/clojure/java/process_test.clj[tes
       output (slurp (process/stdout proc))]
   (.waitFor proc)
   output)
-;; => "/home/username\n" (or similar)
+;; => "/home/username\n" ; or similar
 ----
 
 === File I/O and Redirects
@@ -250,13 +249,17 @@ Here are comprehensive examples (see link:test/clojure/java/process_test.clj[tes
       output (slurp (process/stdout proc))]
   (.waitFor proc)
   output)
-;; => "out\nerr\n" (both in stdout)
+;; => "out\nerr\n" ; both in stdout
 ----
 
 === Process Pipelines
 
 [source,clojure]
 ----
+(require '[clojure.java.process :as process]
+         '[clojure.java.io :as io]
+         '[clojure.string :as str])
+
 ;; Pipeline: echo | wc
 (let [proc1 (process/start "echo" "hello world")
       proc2 (process/start "wc" "-w")
@@ -615,7 +618,7 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 
 | <<comparison-tokenization,Tokenize command string>>
 | No tokenization: `(cjp/exec "printf" "%s\\n" "a b")` → `"a b\n"`
-| Automatic: `(:out (bp/shell {:out :string} "printf %s\\n 'a b'"))` → `"a\nb\n"`
+| Automatic: `(:out (bp/shell {:out :string} "printf '%s\\n' a b"))` → `"a\nb\n"`
 
 | <<comparison-process-control,Check if process alive>>
 | `(.isAlive proc)`
@@ -711,7 +714,6 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 
 ;; Capture as bytes
 (-> (bp/process {:out :bytes} "echo" "output") deref :out)
-;; => #object["[B" ... ]
 ----
 
 [[comparison-input]]
@@ -802,7 +804,6 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (cjp/exec {:clear-env true 
            :env (select-keys (System/getenv) ["PATH" "HOME"])} 
           "sh" "-c" "echo $PATH")
-;; => "/usr/local/bin:/usr/bin:..."
 ----
 
 *babashka.process:*
@@ -824,7 +825,6 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (:out (bp/shell {:env (select-keys (System/getenv) ["PATH" "HOME"]) 
                  :out :string} 
                 "echo $PATH"))
-;; => "/usr/local/bin:/usr/bin:..."
 ----
 
 [[comparison-working-dir]]
@@ -846,8 +846,9 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Execute in different directory
-(:out (bp/shell {:dir "/tmp" :out :string} 
-                "pwd"))
+(-> (bp/shell {:dir "/tmp" :out :string} 
+              "pwd")
+    :out)
 ;; => "/tmp\n"
 ----
 
@@ -1005,7 +1006,9 @@ NOTE: Babashka includes both `clojure.java.process` and `babashka.process`, so t
 (require '[babashka.process :as bp])
 
 ;; Automatic tokenization - string is split on whitespace
-(:out (bp/shell {:out :string} "printf %s\\n 'a b'"))
+(-> (bp/shell {:out :string} 
+              "printf '%s\\n' a b")
+    :out)
 ;; => "a\nb\n"
 ----
 

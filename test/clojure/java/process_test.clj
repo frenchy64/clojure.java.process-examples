@@ -142,6 +142,36 @@
   (testing "Execute printf command"
     (is (= "Hello World" (process/exec "printf" "Hello World")))))
 
+;; Tokenization Tests
+;; -------------------
+;; clojure.java.process does NOT perform shell tokenization on arguments.
+;; Each argument is passed directly to the process without splitting on whitespace.
+;; This is different from shell command strings which would split "a b" into separate args.
+;;
+;; Example: (process/exec "printf" "%s\\n" "a b") 
+;;   - Passes 2 arguments to printf: "%s\\n" and "a b" (as a single arg)
+;;   - Result: "a b\\n" (the string "a b" with one newline)
+;;
+;; Contrast with shell behavior: `printf %s\\n 'a b'` in a shell
+;;   - Shell tokenizes to: printf, %s\\n, and 'a b' (which becomes a b after quote removal)
+;;   - Result would be the same: "a b\\n"
+;;
+;; However, without quotes in shell: `printf %s\\n a b`
+;;   - Shell tokenizes to: printf, %s\\n, a, b (3 arguments!)
+;;   - printf sees format "%s\\n" with two arguments "a" and "b"
+;;   - Result: "a\\nb\\n" (each arg printed with newline)
+
+(deftest test-exec-printf-no-tokenization
+  (testing "Printf with string containing space - no tokenization happens"
+    ;; The string "a b" is passed as a single argument to printf
+    (is (= "a b\n" (process/exec "printf" "%s\\n" "a b")))))
+
+(deftest test-exec-printf-separate-args
+  (testing "Printf with separate arguments shows different behavior"
+    ;; When we pass "a" and "b" as separate arguments,
+    ;; printf receives them as separate args and prints each with format
+    (is (= "a\nb\n" (process/exec "printf" "%s\\n" "a" "b")))))
+
 (deftest test-exec-test-true
   (testing "Execute test command that succeeds"
     (is (= "" (process/exec "test" "1" "-eq" "1")))))
