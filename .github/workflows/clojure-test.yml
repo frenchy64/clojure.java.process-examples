@@ -32,6 +32,8 @@ jobs:
           curl -O https://download.clojure.org/install/linux-install.sh
           chmod +x linux-install.sh
           sudo ./linux-install.sh
+      - name: Check dependabot is in sync with deps.edn
+        run: ./script/check-dependabot
       - name: Install Babashka
         run: |
           curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install

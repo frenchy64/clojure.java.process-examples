@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+SHA=$(git rev-parse HEAD)
+
+clojure -Spom
+mkdir -p dependabot
+mv pom.xml dependabot
