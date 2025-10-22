@@ -7,6 +7,10 @@ on:
   pull_request:
     branches:
       - main
+  schedule:
+    # Run tests every two months on the 1st day at 09:00 UTC
+    # This runs on January 1st, March 1st, May 1st, July 1st, September 1st, November 1st
+    - cron: '0 9 1 1,3,5,7,9,11 *'
 
 env:
   # Increment this to invalidate all caches
@@ -32,6 +36,8 @@ jobs:
           curl -O https://download.clojure.org/install/linux-install.sh
           chmod +x linux-install.sh
           sudo ./linux-install.sh
+      - name: Check dependabot is in sync with deps.edn
+        run: ./script/check-dependabot
       - name: Install Babashka
         run: |
           curl -sLO https://raw.githubusercontent.com/babashka/babashka/master/install
