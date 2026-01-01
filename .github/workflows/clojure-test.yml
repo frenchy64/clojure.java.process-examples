@@ -27,7 +27,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Cache Maven dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: ${{ env.ACTIONS_CACHE_VERSION }}-m2-${{ hashFiles('deps.edn', 'bb.edn') }}
